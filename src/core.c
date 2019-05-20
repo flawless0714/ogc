@@ -11,6 +11,9 @@
         can't use) as argument of calling of `gc_mark_stack`. How I made `dummy`
         runable is through using global dummy data instead of local variable of
         thread.
+    2. `gc_destroy_worker` shouldn't called by user-program since it may corrupt other
+        program's dynamic memory. (inspite of we have only one user-pragram within each
+        execution)
 */
 
 #include "gc_internal.h"
