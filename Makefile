@@ -1,12 +1,13 @@
 CFLAGS := \
-	-Wall -std=c11 \
-	-I. -MMD
+	-Wall -std=gnu11 \
+	-I. -MMD -pthread
 
 OBJS := \
 	src/alloc.o \
 	src/core.o \
 	src/list.o \
-	src/utils.o
+	src/utils.o \
+	src/gc_thread_funcs.o
 
 deps := $(OBJS:%.o=%.d)
 
@@ -31,7 +32,7 @@ PASS_COLOR = \e[32;01m
 NO_COLOR = \e[0m
 tests/%.done: tests/%
 	@$(PRINTF) "*** Validating $< ***\n"
-	@./$< && $(PRINTF) "\t$(PASS_COLOR)[ Verified ]$(NO_COLOR)\n"
+	@valgrind $< && $(PRINTF) "\t$(PASS_COLOR)[ Verified ]$(NO_COLOR)\n"
 check: $(OBJS) $(addsuffix .done, $(TESTS))
 
 clean:
