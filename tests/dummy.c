@@ -1,5 +1,9 @@
 #include <assert.h>
 #include "gc.h"
+#include "../src/gc_internal.h"
+
+
+uint8_t dummy_data2[50];
 
 void sample(void **h)
 {
@@ -11,7 +15,7 @@ void sample(void **h)
 
 int main(int argc, char *argv[])
 {
-    gc_init(&argc, 1);
+    gc_init(&dummy_data2, 1);
 
     void *h = 0;
     sample(&h);

@@ -1,4 +1,28 @@
+/*
+    NOTE:
+    1. Thread pool is a better impl if the calling of API of `ogc` is intensive, since
+         it saved the overhead of thread creation.
+
+    TODO:
+    -1. Seperate program (`dummy` and `string-separate`) and ogc into different thread,
+        or we are losing the meaning of threading.
+    1. Currently, only `dummy` can pass the verification since `string-separate` is
+        still using local variable (belongs to thread, which of memory address we
+        can't use) as argument of calling of `gc_mark_stack`. How I made `dummy`
+        runable is through using global dummy data instead of local variable of
+        thread.
+*/
+
 #include "gc_internal.h"
+#include "gc.h"
+
+
+/*
+    When we call API of `ogc` within API of ogc, it may do mutex lock twice, which
+    cause deadlock due to the lock is aquired by first mutex lock within same
+    thread.
+*/
+pthread_spinlock_t spin_re_gc;
 
 gc_t __gc_object = (gc_t){.ref_count = 0};
 
@@ -16,6 +40,8 @@ void gc_init(void *ptr, size_t limit)
                          .min = UINTPTR_MAX,
                          .max = 0,
                          .globals = NULL};
+
+    pthread_spin_init(&spin_re_gc, PTHREAD_PROCESS_PRIVATE);
 }
 
 static inline void swap_ptr(uint8_t **a, uint8_t **b)
@@ -61,24 +87,16 @@ void gc_sweep(void)
 
 void gc_run(void)
 {
-    gc_mark_stack();
-    gc_sweep();
+   pthread_t tid;
+
+   pthread_create(&tid, NULL, gc_run_worker, NULL);
+   pthread_join(tid, NULL);
 }
 
 void gc_destroy(void)
 {
-    __gc_object.ref_count--;
-    if (__gc_object.ref_count <= 0) {
-        __gc_object.ref_count = 0;
-        for (int i = -1; ++i < PTR_MAP_SIZE;) {
-            gc_list_t *m = __gc_object.ptr_map[i];
-            while (m) {
-                gc_list_t *tmp = m;
-                free((void *) (m->data.start));
-                m = m->next;
-                free(tmp);
-            }
-            __gc_object.ptr_map[i] = 0;
-        }
-    }
+    pthread_t tid;
+
+    pthread_create(&tid, NULL, gc_destroy_worker, NULL);
+    pthread_join(tid, NULL);
 }

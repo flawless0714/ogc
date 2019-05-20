@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "gc_internal.h"
 
+uint8_t dummy_data[100];
+
 static inline gc_list_t *list_search(uintptr_t ptr, gc_list_t *e)
 {
     for (; e; e = e->next) {
@@ -32,8 +34,10 @@ gc_list_t *gc_ptr_index(uintptr_t ptr)
 
 void gc_mark_stack(void)
 {
-    uint8_t tmp;
-    gc_mark(__gc_object.stack_start, &tmp);
+    // uint8_t tmp; pthread doesn't shares stack
+    gc_mark(__gc_object.stack_start, &dummy_data);
+
+    // this should be fixed (never start)
     for (gc_list_t *e = __gc_object.globals; e; e = e->next) {
         gc_mark((uint8_t *) (e->data.start),
                 (uint8_t *) (e->data.start + e->data.size));

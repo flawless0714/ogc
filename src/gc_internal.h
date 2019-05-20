@@ -1,10 +1,12 @@
 #ifndef GC_INTERNAL_H
 #define GC_INTERNAL_H
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include "gc.h"
+
 
 #define PTR_MAP_SIZE 64
 #define HASH(ptr) ((uintptr_t) ptr >> 3)
@@ -47,8 +49,10 @@ bool gc_list_exist(gc_list_t *begin_list, uintptr_t ptr);
 
 static inline void gc_mfree(gc_list_t *e)
 {
-    free((void *) e->data.start);
-    __gc_object.ptr_num--;
+    pthread_t tid;
+
+    pthread_create(&tid, NULL, gc_mfree_worker, (void *) e);
+    pthread_join(tid, NULL);
 }
 
 #endif

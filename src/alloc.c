@@ -1,32 +1,37 @@
 #include "gc_internal.h"
+#include "gc.h"
 
 void *gc_alloc(size_t size)
 {
     uintptr_t ptr;
-    if (!(ptr = (uintptr_t) malloc(size)))
-        return NULL;
+    pthread_t tid;
 
-    gc_ptr_t p = (gc_ptr_t){
-        .start = ptr,
-        .size = size,
-        .marked = true,
-    };
-    if (__gc_object.min > ptr)
-        __gc_object.min = ptr;
-    if (__gc_object.max < ptr + size)
-        __gc_object.max = ptr + size;
-    gc_list_add(&__gc_object.ptr_map[HASH(ptr) % PTR_MAP_SIZE], p);
-    __gc_object.ptr_num++;
-    if (__gc_object.ptr_num >= __gc_object.limit)
-        gc_run();
+    /*
+        I don't think this is a good practice, because the calling of
+        funcs like this cause a little blocking (it's worst when
+        multiple calling of this func since mutex is blocking us).
+        The only pros I know is it improves the concurrency of
+        programs executing with ogc.
+    */
+    pthread_create(&tid, NULL,  gc_alloc_worker, &size);
+    pthread_join(tid, (void *) &ptr);
+
     return (void *) ptr;
 }
 
+
+/* 
+    Currently not figured how to make this func running under threading
+    since `gc_mfree` it called also being called by other `ogc` API, if
+    I done threading for these two funcs, deadlock may occur. So the
+    solution so far I thought is if `gc_free` should be threading, we
+    need to change infrastructure of `ogc`. Honestly, I dont have
+    scheme so far for doing so.
+*/
 void gc_free(void *ptr)
 {
-    gc_list_t *lst = __gc_object.ptr_map[HASH(ptr) % PTR_MAP_SIZE];
-    if (lst && gc_list_exist(lst, (uintptr_t) lst)) {
-        gc_list_del(&lst, (uintptr_t) lst);
-        gc_mfree(lst);
-    }
+    pthread_t tid;
+    
+    pthread_create(&tid, NULL, gc_free_worker, ptr);
+    pthread_join(tid, NULL);
 }
