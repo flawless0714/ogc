@@ -22,7 +22,6 @@ void* gc_alloc_worker(void* arg)
         .marked = true,
     };
     
-    // Determine this first since without this the func may not work properly
     pthread_mutex_lock(&mutex_gc_object);
 
     pthread_spin_lock(&spin_re_gc);
