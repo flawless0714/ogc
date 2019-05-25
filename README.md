@@ -17,7 +17,8 @@ OGC implements the typical "mark and sweep" algorithm. It works as follows:
         + we then call "sweep" with the global allocated memory list
         + every block that is not marked is not used, and can be freed and
           popped from given list
-
+          
+For more information, please refer to my note at [HackMD](https://hackmd.io/s/SJYZfQuo4).
 
 ## How it works
 
