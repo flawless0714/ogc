@@ -1,9 +1,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "../src/gc_internal.h"
 #include "gc.h"
 
 #define IS_DEL(c, d) (c == d)
+
+uint8_t dummy_data2[50];
 
 static int count_words(char *s, char delimiter)
 {
@@ -54,7 +57,7 @@ char **my_strsep(char *s, char delimiter)
 
 int main(int argc, char *argv[])
 {
-    gc_init(&argc, 1);
+    gc_init(dummy_data2, 1);
 
     char **sep = my_strsep("hello,world", ',');
     assert(sep);
