@@ -1,6 +1,8 @@
 #include "gc_internal.h"
 #include "gc.h"
 
+#define debug(str) puts(str)
+
 pthread_mutex_t mutex_gc_object = PTHREAD_MUTEX_INITIALIZER;
 int is_gc_locked = 0;
 extern pthread_spinlock_t spin_re_gc;
@@ -58,19 +60,13 @@ void* gc_mfree_worker(void* arg)
         __gc_object.ptr_num--;
 
         is_gc_locked = 0;
-
-        pthread_spin_unlock(&spin_re_gc);
     }
     else {
-        pthread_mutex_lock(&mutex_gc_object);
-
         free((void *) ((gc_list_t *) arg)->data.start);
         __gc_object.ptr_num--;
 
         if (!rt)
             pthread_spin_unlock(&spin_re_gc);
-
-        pthread_mutex_unlock(&mutex_gc_object);
     }
     
     pthread_exit(NULL);
@@ -124,7 +120,6 @@ void* gc_run_worker(void* arg)
     if (is_gc_locked) {
         gc_mark_stack();
         gc_sweep();
-
         is_gc_locked = 0;
 
         pthread_spin_unlock(&spin_re_gc);
